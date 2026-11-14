@@ -1,0 +1,50 @@
+{
+  "tasks": [
+    {
+      "id": "summarize",
+      "label": "Summarizer",
+      "description": "Condense long text into key points.",
+      "placeholder": "Paste an article, notes or paragraph to summarize...",
+      "system": "You are a careful academic assistant. You summarize text faithfully and never add facts that are not in the source.",
+      "template": "Summarize the text below.\nRules:\n1. Give exactly {points} bullet points.\n2. Each bullet must be under 25 words.\n3. Use only information present in the text.\n4. Finish with one line starting 'Takeaway:'.\nTone: {tone}.\n\nTEXT:\n{input}",
+      "v1_prompt": "Summarize this: {input}"
+    },
+    {
+      "id": "ideas",
+      "label": "Idea Generator",
+      "description": "Brainstorm project, startup or content ideas.",
+      "placeholder": "e.g. Mini project ideas for a third-year CSE student using machine learning",
+      "system": "You are a creative but practical brainstorming partner for engineering students.",
+      "template": "Generate {points} distinct ideas for the topic below.\nFor each idea give: a short title, a one-line description, and one difficulty tag (Easy / Medium / Hard).\nKeep ideas realistic for a student team to build in 4 weeks.\nTone: {tone}.\n\nTOPIC:\n{input}",
+      "v1_prompt": "Give me ideas about {input}"
+    },
+    {
+      "id": "explain",
+      "label": "Concept Explainer",
+      "description": "Explain a technical concept simply.",
+      "placeholder": "e.g. Transformers in deep learning",
+      "system": "You are a patient teacher who explains technical topics to undergraduate students.",
+      "template": "Explain the concept below to a second-year engineering student.\nStructure your answer as: (a) one-sentence definition, (b) a real-life analogy, (c) a short example, (d) one common misconception.\nKeep it under 200 words. Tone: {tone}.\n\nCONCEPT:\n{input}",
+      "v1_prompt": "Explain {input}"
+    },
+    {
+      "id": "email",
+      "label": "Email Writer",
+      "description": "Draft a clear, polite professional email.",
+      "placeholder": "e.g. Ask my professor for a 2-day extension on the lab report because of illness",
+      "system": "You write clear, polite and concise professional emails for students.",
+      "template": "Write an email based on the request below.\nInclude a subject line, greeting, body (max {points} short sentences) and a sign-off with the placeholder [Your Name].\nTone: {tone}.\n\nREQUEST:\n{input}",
+      "v1_prompt": "Write an email: {input}"
+    },
+    {
+      "id": "text",
+      "label": "Text Generator",
+      "description": "Generate a short paragraph, post or note on any topic.",
+      "placeholder": "e.g. A short LinkedIn post about finishing my first AI project",
+      "system": "You are a helpful writing assistant. Write original, clear text and do not invent statistics or quotes.",
+      "template": "Write a short piece of text on the topic below in about {points} sentences.\nAvoid made-up statistics, names or quotations.\nTone: {tone}.\n\nTOPIC:\n{input}",
+      "v1_prompt": "Write about {input}"
+    }
+  ],
+  "tones": ["Neutral", "Formal", "Friendly", "Simple"]
+}

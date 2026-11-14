@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Project Studio</title>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Segoe UI,Arial,sans-serif;background:#f3f5f9;color:#1f2937}
+  header{background:#1e3a5f;color:#fff;padding:16px 28px}
+  header h1{margin:0;font-size:22px} header p{margin:4px 0 0;font-size:13px;opacity:.8}
+  main{max-width:1000px;margin:20px auto;padding:0 16px;display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  @media(max-width:760px){main{grid-template-columns:1fr}}
+  .card{background:#fff;border:1px solid #dde3ec;border-radius:8px;padding:16px}
+  h2{font-size:15px;margin:0 0 10px;color:#1e3a5f}
+  .tasks{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+  .task{border:1px solid #b8c4d6;background:#f8fafc;padding:7px 12px;border-radius:20px;cursor:pointer;font-size:13px}
+  .task.active{background:#1e3a5f;color:#fff;border-color:#1e3a5f}
+  textarea{width:100%;height:150px;padding:10px;border:1px solid #b8c4d6;border-radius:6px;font:inherit;resize:vertical}
+  .row{display:flex;gap:12px;margin:10px 0;align-items:end;flex-wrap:wrap}
+  label{font-size:12px;color:#4b5563;display:block;margin-bottom:3px}
+  select,input[type=number]{padding:6px;border:1px solid #b8c4d6;border-radius:6px;font:inherit}
+  button.go{background:#2563eb;color:#fff;border:0;padding:9px 20px;border-radius:6px;cursor:pointer;font-size:14px}
+  button.go:disabled{opacity:.6;cursor:wait}
+  button.small{background:#e5e9f0;border:0;padding:5px 10px;border-radius:5px;cursor:pointer;font-size:12px}
+  #output{white-space:pre-wrap;min-height:150px;background:#f8fafc;border:1px solid #e1e6ee;border-radius:6px;padding:10px;font-size:14px;line-height:1.5}
+  #error{color:#b91c1c;font-size:13px;margin-top:8px}
+  details{margin-top:10px;font-size:12px} pre{white-space:pre-wrap;background:#f1f5f9;padding:8px;border-radius:5px}
+  .hist-item{padding:6px 0;border-bottom:1px solid #eef1f6;font-size:12px;cursor:pointer}
+  .badge{background:#fde68a;color:#78350f;font-size:11px;padding:2px 7px;border-radius:10px;margin-left:6px}
+  .full{grid-column:1/-1}
+</style>
+</head>
+<body>
+<header>
+  <h1>AI Project Studio</h1>
+  <p>Enter a task, get AI-generated text, summaries or ideas.</p>
+</header>
+<main>
+  <section class="card">
+    <h2>1. Choose a task</h2>
+    <div class="tasks" id="tasks">
+      {% for t in tasks %}
+      <button class="task" data-id="{{ t.id }}" data-ph="{{ t.placeholder }}" title="{{ t.description }}">{{ t.label }}</button>
+      {% endfor %}
+    </div>
+    <h2>2. Enter your input</h2>
+    <textarea id="input" maxlength="6000"></textarea>
+    <div class="row">
+      <div><label for="tone">Tone</label>
+        <select id="tone">{% for t in tones %}<option>{{ t }}</option>{% endfor %}</select></div>
+      <div><label for="points">Length (points/sentences)</label>
+        <input type="number" id="points" value="5" min="1" max="10" style="width:70px"></div>
+      <button class="go" id="go">Generate</button>
+      <button class="small" id="clear">Clear</button>
+    </div>
+    <div id="error"></div>
+  </section>
+
+  <section class="card">
+    <h2>Result <span id="demo" class="badge" hidden>demo mode</span></h2>
+    <div id="output">Your AI-generated result will appear here.</div>
+    <div class="row"><button class="small" id="copy">Copy result</button></div>
+    <details><summary>Show the prompt that was sent</summary><pre id="prompt"></pre></details>
+  </section>
+
+  <section class="card full">
+    <h2>History (this session)</h2>
+    <div id="history"><span style="font-size:12px;color:#6b7280">Nothing yet. Click an item later to reload it.</span></div>
+  </section>
+</main>
+
+<script>
+let current = document.querySelector('.task');
+const $ = id => document.getElementById(id);
+const history = [];
+
+function select(btn){
+  document.querySelectorAll('.task').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active'); current = btn;
+  $('input').placeholder = btn.dataset.ph;
+}
+document.querySelectorAll('.task').forEach(b => b.onclick = () => select(b));
+select(current);
+
+$('clear').onclick = () => { $('input').value=''; $('output').textContent=''; $('error').textContent=''; };
+$('copy').onclick = () => navigator.clipboard.writeText($('output').textContent);
+
+$('go').onclick = async () => {
+  $('error').textContent = '';
+  const text = $('input').value.trim();
+  if(!text){ $('error').textContent = 'Please type some input first.'; return; }
+  $('go').disabled = true; $('go').textContent = 'Generating...';
+  $('output').textContent = 'Thinking...';
+  try{
+    const res = await fetch('/api/generate', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({task: current.dataset.id, input: text, tone: $('tone').value, points: $('points').value})});
+    const data = await res.json();
+    if(!res.ok){ $('error').textContent = data.error || 'Something went wrong.'; $('output').textContent=''; if(data.prompt) $('prompt').textContent = data.prompt; return; }
+    $('output').textContent = data.output;
+    $('prompt').textContent = data.prompt;
+    $('demo').hidden = !data.demo;
+    history.unshift({task: current.textContent, input: text, output: data.output});
+    renderHistory();
+  }catch(e){
+    $('error').textContent = 'Network error. Is the server running?'; $('output').textContent='';
+  }finally{
+    $('go').disabled = false; $('go').textContent = 'Generate';
+  }
+};
+
+function renderHistory(){
+  const box = $('history'); box.innerHTML = '';
+  history.slice(0,8).forEach(h => {
+    const d = document.createElement('div'); d.className='hist-item';
+    d.textContent = h.task + ': ' + h.input.slice(0,70);
+    d.onclick = () => { $('input').value = h.input; $('output').textContent = h.output; };
+    box.appendChild(d);
+  });
+}
+</script>
+</body>
+</html>
